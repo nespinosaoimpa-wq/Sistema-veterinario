@@ -68,3 +68,4 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onUrgencyClick, onPro
     </header>
   );
 };
+

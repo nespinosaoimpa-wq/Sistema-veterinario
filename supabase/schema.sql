@@ -331,3 +331,4 @@ CREATE INDEX idx_suscripciones_paciente ON public.suscripciones_socios(paciente_
 CREATE INDEX idx_vacunaciones_paciente ON public.vacunaciones(paciente_id);
 CREATE INDEX idx_historias_paciente ON public.historias_clinicas(paciente_id);
 CREATE INDEX idx_bot_mensajes_estado ON public.bot_mensajes(estado, programado_para);
+

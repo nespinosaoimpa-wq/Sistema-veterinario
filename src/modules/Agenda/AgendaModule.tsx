@@ -521,3 +521,4 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onC
     </div>
   );
 };
+

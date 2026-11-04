@@ -164,3 +164,4 @@ VALUES
 INSERT INTO public.triajes_urgencia (paciente_id, nivel, sintoma_principal, sala_asignada, spo2_porcentaje, temperatura_celsius)
 VALUES
 ('d1111111-1111-1111-1111-111111111111', 'critico_rojo', 'Dificultad respiratoria aguda', 'Sala 2 / Urgencias', 89, 39.4);
+

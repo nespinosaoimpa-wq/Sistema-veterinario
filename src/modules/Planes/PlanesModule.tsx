@@ -676,3 +676,4 @@ export const PlanesModule: React.FC<PlanesModuleProps> = ({ onNavigateToTab }) =
     </div>
   );
 };
+

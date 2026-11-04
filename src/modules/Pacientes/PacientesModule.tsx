@@ -498,3 +498,4 @@ export const PacientesModule: React.FC<PacientesModuleProps> = ({
     </div>
   );
 };
+

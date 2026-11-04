@@ -320,3 +320,4 @@ export const mockBotMensajes: BotMensajeItem[] = [
     categoria_filtro: "desparasitacion"
   }
 ];
+

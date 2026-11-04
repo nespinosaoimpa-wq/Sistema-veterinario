@@ -132,3 +132,4 @@ export interface BotMensajeItem {
   lote_desc?: string;
   categoria_filtro: 'vacunacion' | 'posquirurgico' | 'desparasitacion' | 'turnos';
 }
+

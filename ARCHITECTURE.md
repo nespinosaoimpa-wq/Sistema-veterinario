@@ -153,3 +153,4 @@ WHATSAPP_PHONE_NUMBER_ID=tu-phone-number-id
    * Ir a [vercel.com](https://vercel.com) e importar el repositorio de GitHub.
    * En *Environment Variables*, agregar `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
    * Hacer clic en **Deploy**. El sistema compilará y quedará online con certificado SSL automático.
+

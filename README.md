@@ -100,3 +100,4 @@ Para evitar que una familia tenga que desembolsar $80.000 a $300.000 de golpe an
    - Framework preset: **Vite**.
    - Agrega las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
    - Haz clic en **Deploy**. ¡Tu sistema estará en línea con HTTPS automático!
+

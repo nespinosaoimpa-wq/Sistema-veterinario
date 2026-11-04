@@ -281,3 +281,4 @@ INSERT INTO public.planes_salud (
     true, 
     100, 100, 50, 100
 );
+

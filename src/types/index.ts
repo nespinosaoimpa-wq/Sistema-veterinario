@@ -1,9 +1,36 @@
-// Tipos de dominio para VetCare Pro
+// Tipos de dominio para VetCare Pro (SaaS B2B Multi-tenant)
 
 export type TabModulo = 'agenda' | 'pacientes' | 'bot-y-alertas' | 'planes-salud';
+export type RolUsuario = 'veterinario' | 'recepcionista' | 'administrador';
+
+export interface Clinica {
+  id: string;
+  slug: string;
+  nombre_fantasia: string;
+  razon_social?: string;
+  cuit: string;
+  email_contacto: string;
+  telefono?: string;
+  direccion: string;
+  cuota_socio_defecto: number;
+}
+
+export interface UsuarioSesion {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  rol: RolUsuario;
+  matricula_provincial?: string;
+  box_actual: string;
+  turno_actual: string;
+  clinica: Clinica;
+  avatar_url?: string;
+}
 
 export interface Veterinario {
   id: string;
+  clinica_id?: string;
   nombre: string;
   apellido: string;
   email: string;
@@ -16,6 +43,7 @@ export interface Veterinario {
 
 export interface Tutor {
   id: string;
+  clinica_id?: string;
   nombre_completo: string;
   dni: string;
   email?: string;
@@ -26,6 +54,7 @@ export interface Tutor {
 
 export interface Paciente {
   id: string;
+  clinica_id?: string;
   nombre: string;
   especie: string;
   raza: string;
@@ -132,4 +161,3 @@ export interface BotMensajeItem {
   lote_desc?: string;
   categoria_filtro: 'vacunacion' | 'posquirurgico' | 'desparasitacion' | 'turnos';
 }
-

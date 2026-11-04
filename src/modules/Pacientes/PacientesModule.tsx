@@ -18,7 +18,7 @@ export const PacientesModule: React.FC<PacientesModuleProps> = ({
   const [showAddVaccineModal, setShowAddVaccineModal] = useState(false);
 
   return (
-    <div className="flex flex-col w-full pb-28 max-w-lg mx-auto text-left">
+    <div className="flex flex-col w-full pb-28 max-w-5xl mx-auto text-left">
       <div className="px-margin pt-space-md pb-space-lg flex flex-col gap-space-md">
         
         {/* 2.1 Barra Superior / Breadcrumb */}

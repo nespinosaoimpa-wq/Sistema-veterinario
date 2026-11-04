@@ -33,7 +33,7 @@ export const BotModule: React.FC<BotModuleProps> = ({ onTriggerTestSimulation })
   };
 
   return (
-    <div className="flex flex-col w-full pb-28 max-w-lg mx-auto text-left">
+    <div className="flex flex-col w-full pb-28 max-w-5xl mx-auto text-left">
       {/* 3.1 Bot Master Status Banner */}
       <div className="px-margin pt-space-md pb-space-sm">
         <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm border border-surface-container-high/40">

@@ -41,7 +41,7 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onC
   };
 
   return (
-    <div className="flex flex-col w-full pb-28 max-w-lg mx-auto">
+    <div className="flex flex-col w-full pb-28 max-w-5xl mx-auto">
       {/* 1.1 Hero Section / Bienvenida */}
       <div className="px-margin pt-space-md pb-space-xs">
         <div className="flex items-center justify-between">
@@ -91,71 +91,74 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onC
         )}
       </div>
 
-      {/* 1.2 Banner de Urgencia Crítico (Triaje en Espera) */}
-      {!triaje.atendido && (
-        <div className="px-margin mt-space-sm">
-          <div className="rounded-2xl bg-error-container text-on-error-container p-space-md shadow-md flex flex-col gap-space-xs relative overflow-hidden border border-error/20 text-left">
-            <div className="flex items-start justify-between gap-space-sm">
-              <div className="flex items-center gap-space-xs">
-                <span className="material-symbols-outlined text-[20px] text-error animate-pulse">warning</span>
-                <span className="font-label-sm text-label-sm uppercase tracking-wide text-error font-bold">
-                  Triaje de Urgencia en Espera
+      {/* 1.2 Banner de Urgencia & 1.3 Estadísticas (Grid responsivo en Desktop) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 px-margin mt-space-sm items-start">
+        {/* Banner de Urgencia Crítico */}
+        {!triaje.atendido && (
+          <div className="lg:col-span-7">
+            <div className="rounded-2xl bg-error-container text-on-error-container p-space-md shadow-md flex flex-col gap-space-xs relative overflow-hidden border border-error/20 text-left">
+              <div className="flex items-start justify-between gap-space-sm">
+                <div className="flex items-center gap-space-xs">
+                  <span className="material-symbols-outlined text-[20px] text-error animate-pulse">warning</span>
+                  <span className="font-label-sm text-label-sm uppercase tracking-wide text-error font-bold">
+                    Triaje de Urgencia en Espera
+                  </span>
+                </div>
+                <span className="font-label-sm text-label-sm bg-surface-container-lowest text-error px-2.5 py-0.5 rounded-full shadow-sm font-semibold">
+                  {triaje.tiempo_espera}
                 </span>
               </div>
-              <span className="font-label-sm text-label-sm bg-surface-container-lowest text-error px-2.5 py-0.5 rounded-full shadow-sm font-semibold">
-                {triaje.tiempo_espera}
-              </span>
-            </div>
 
-            <div className="flex items-center gap-space-sm mt-1">
-              <div className="w-13 h-13 rounded-xl bg-surface-container-lowest flex items-center justify-center text-error flex-shrink-0 shadow-sm overflow-hidden">
-                <img
-                  className="w-14 h-14 object-cover rounded-xl"
-                  alt="Canino en Urgencias"
-                  src={triaje.foto_url}
-                />
+              <div className="flex items-center gap-space-sm mt-1">
+                <div className="w-13 h-13 rounded-xl bg-surface-container-lowest flex items-center justify-center text-error flex-shrink-0 shadow-sm overflow-hidden">
+                  <img
+                    className="w-14 h-14 object-cover rounded-xl"
+                    alt="Canino en Urgencias"
+                    src={triaje.foto_url}
+                  />
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+                    {triaje.especie_raza}
+                  </span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
+                    {triaje.sintoma}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
-                  {triaje.especie_raza}
+
+              <div className="mt-space-xs pt-space-xs flex items-center justify-between gap-space-sm border-t border-error/10">
+                <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
+                  <span className="material-symbols-outlined text-[16px] text-error">ecg_heart</span>
+                  SpO2 {triaje.spo2}% • Temp {triaje.temperatura}°C
                 </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
-                  {triaje.sintoma}
-                </span>
+                <button
+                  onClick={handleAtenderUrgencia}
+                  className="bg-error text-on-error px-4 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-transform shadow-md font-bold"
+                >
+                  <span>Atender Ya</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="mt-space-xs pt-space-xs flex items-center justify-between gap-space-sm border-t border-error/10">
-              <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
-                <span className="material-symbols-outlined text-[16px] text-error">ecg_heart</span>
-                SpO2 {triaje.spo2}% • Temp {triaje.temperatura}°C
-              </span>
-              <button
-                onClick={handleAtenderUrgencia}
-                className="bg-error text-on-error px-4 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-transform shadow-md font-bold"
-              >
-                <span>Atender Ya</span>
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-              </button>
+        {/* Panel de Estadísticas del Día */}
+        <div className={triaje.atendido ? 'lg:col-span-12' : 'lg:col-span-5'}>
+          <div className="grid grid-cols-3 gap-space-xs bg-surface-container-lowest p-space-xs rounded-2xl shadow-sm border border-surface-container-high/40 h-full items-center">
+            <div className="flex flex-col items-center justify-center py-4 px-1 rounded-xl bg-surface-container-low text-center">
+              <span className="font-headline-md text-headline-md text-primary font-bold">8</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Citas Hoy</span>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 1.3 Panel de Estadísticas del Día */}
-      <div className="px-margin mt-space-md">
-        <div className="grid grid-cols-3 gap-space-xs bg-surface-container-lowest p-space-xs rounded-2xl shadow-sm border border-surface-container-high/40">
-          <div className="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-surface-container-low text-center">
-            <span className="font-headline-md text-headline-md text-primary font-bold">8</span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Citas Hoy</span>
-          </div>
-          <div className="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-surface-container-low text-center">
-            <span className="font-headline-md text-headline-md text-secondary font-bold">3</span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Atendidas</span>
-          </div>
-          <div className="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-surface-container-low text-center">
-            <span className="font-headline-md text-headline-md text-tertiary font-bold">1</span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Urg. Resuelta</span>
+            <div className="flex flex-col items-center justify-center py-4 px-1 rounded-xl bg-surface-container-low text-center">
+              <span className="font-headline-md text-headline-md text-secondary font-bold">3</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Atendidas</span>
+            </div>
+            <div className="flex flex-col items-center justify-center py-4 px-1 rounded-xl bg-surface-container-low text-center">
+              <span className="font-headline-md text-headline-md text-tertiary font-bold">1</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Urg. Resuelta</span>
+            </div>
           </div>
         </div>
       </div>

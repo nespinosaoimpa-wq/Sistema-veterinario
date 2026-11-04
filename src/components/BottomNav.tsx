@@ -15,7 +15,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
   ];
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)] border-t border-surface-container-high/60">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.05)] border-t border-surface-container-high/60">
       <div className="flex items-center justify-around h-16 px-space-xs max-w-md mx-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -46,4 +46,3 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
     </nav>
   );
 };
-

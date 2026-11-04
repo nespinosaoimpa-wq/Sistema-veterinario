@@ -23,7 +23,7 @@ export const PlanesModule: React.FC<PlanesModuleProps> = ({ onNavigateToTab }) =
   };
 
   return (
-    <div className="flex flex-col w-full px-margin py-space-md space-y-space-md pb-28 max-w-lg mx-auto text-left">
+    <div className="flex flex-col w-full px-margin py-space-md space-y-space-md pb-28 max-w-5xl mx-auto text-left">
       
       {/* 4.1 Encabezado */}
       <div className="flex flex-col space-y-space-xs">
@@ -274,200 +274,210 @@ export const PlanesModule: React.FC<PlanesModuleProps> = ({ onNavigateToTab }) =
             </span>
           </div>
 
-          {/* PLAN 1: Plan Socio Particular ($10.000/mes) - DESTACADO POR EL USUARIO */}
-          <div className="bg-gradient-to-br from-surface-container-lowest via-primary/5 to-surface-container-low rounded-3xl p-space-md shadow-lg border-2 border-primary space-y-space-sm relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="px-3 py-0.5 rounded-full font-label-sm text-[10px] bg-primary text-on-primary font-bold uppercase tracking-wider">
-                ★ Plan Socio Recomendado
-              </span>
-              <span className="font-label-sm text-[11px] text-primary font-bold">
-                Cuota Fija Sin Sorpresas
-              </span>
-            </div>
-
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                  Plan Socio Particular
-                </span>
-                <span className="font-body-sm text-[12px] text-on-surface-variant font-medium">
-                  Cuota comunitaria mensual para no pagar todo de golpe
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="font-headline-sm text-headline-sm text-primary font-extrabold text-[22px]">
-                  $ 10.000
-                </span>
-                <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
-              </div>
-            </div>
-
-            <p className="font-body-sm text-[12px] text-on-surface-variant italic bg-surface-container/60 p-2.5 rounded-xl border border-primary/20">
-              "Con solo $10.000 por mes, si tu mascota sufre una urgencia o le tocan las vacunas del año, tenés la atención 100% cubierta sin tener que desembolsar $80.000 o más en el acto."
-            </p>
-
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span><strong>100% Cubierto en Urgencias 24/7</strong> sin copago</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span><strong>100% Bonificado en Vacunas</strong> (Rabia, Séxtuple/Triple Felina)</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Consultas clínicas generales (hasta 6 al año) sin cargo</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span><strong>50% de descuento directo</strong> en cirugías e internación</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Carnet digital QR con atención prioritaria</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setSelectedPlanForAffiliation('PLAN-SOCIO-COMUNIDAD');
-                setShowAffiliateModal(true);
-              }}
-              className="w-full mt-space-sm py-3 px-4 rounded-2xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:bg-primary-container shadow-md active:scale-95 transition-all"
-            >
-              Afiliar a Plan Socio ($10.000/mes)
-            </button>
-          </div>
-
-          {/* PLAN 2: Plan Esencial ($12.900/mes) */}
-          <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm border border-surface-container-high/40 space-y-space-sm relative">
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Plan Esencial</span>
-                <span className="font-body-sm text-[12px] text-on-surface-variant">Protección básica y medicina preventiva</span>
-              </div>
-              <div className="text-right">
-                <span className="font-headline-sm text-headline-sm text-primary font-bold">$ 12.900</span>
-                <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
-              </div>
-            </div>
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Consultas clínicas: 100% bonificadas (hasta 6 al año)</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Vacunación anual y desparasitaciones periódicas</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>15% descuento en farmacia y medicamentos</span>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setSelectedPlanForAffiliation('PLAN-ESENCIAL');
-                setShowAffiliateModal(true);
-              }}
-              className="w-full mt-space-sm py-2.5 px-4 rounded-2xl bg-surface-container text-primary font-label-md text-label-md font-bold hover:bg-surface-container-high transition-colors"
-            >
-              Afiliar a Plan Esencial
-            </button>
-          </div>
-
-          {/* PLAN 3: Plan Platinum ($24.500/mes) */}
-          <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-md border border-surface-container-high/40 space-y-space-sm relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary text-on-secondary font-bold">
-                Plan de Thor · Cobertura Integral
-              </span>
-            </div>
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Plan Platinum</span>
-                <span className="font-body-sm text-[12px] text-on-surface-variant">Máxima tranquilidad para cachorros y adultos</span>
-              </div>
-              <div className="text-right">
-                <span className="font-headline-sm text-headline-sm text-primary font-bold">$ 24.500</span>
-                <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
-              </div>
-            </div>
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Consultas ilimitadas + Urgencias 24/7 sin copago</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>40% de cobertura en cirugías e internaciones</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Limpieza dental con ultrasonido anual gratuita</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Estudios de laboratorio y radiografías al 50%</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 pt-space-xs">
-              <button
-                onClick={() => alert("Mostrando comparativa detallada de coberturas")}
-                className="flex-1 py-2.5 px-4 rounded-2xl bg-surface-container-high text-on-surface font-label-md text-label-md font-bold"
-              >
-                Comparar Coberturas
-              </button>
-              <button
-                onClick={() => alert("Compartiendo ficha del plan por WhatsApp")}
-                className="py-2.5 px-3 rounded-2xl bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[18px]">share</span>
-              </button>
-            </div>
-          </div>
-
-          {/* PLAN 4: Plan Senior (+7 Años) */}
-          <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm border border-surface-container-high/40 space-y-space-sm relative">
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Plan Senior</span>
-                  <span className="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-tertiary-fixed text-on-tertiary-fixed font-bold">
-                    +7 Años
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            {/* PLAN 1: Plan Socio Particular ($10.000/mes) - DESTACADO POR EL USUARIO */}
+            <div className="bg-gradient-to-br from-surface-container-lowest via-primary/5 to-surface-container-low rounded-3xl p-space-md shadow-lg border-2 border-primary space-y-space-sm relative overflow-hidden h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="px-3 py-0.5 rounded-full font-label-sm text-[10px] bg-primary text-on-primary font-bold uppercase tracking-wider">
+                    ★ Plan Socio Recomendado
+                  </span>
+                  <span className="font-label-sm text-[11px] text-primary font-bold">
+                    Cuota Fija Sin Sorpresas
                   </span>
                 </div>
-                <span className="font-body-sm text-[12px] text-on-surface-variant">Diagnóstico precoz y geriatría preventiva</span>
+
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                      Plan Socio Particular
+                    </span>
+                    <span className="font-body-sm text-[12px] text-on-surface-variant font-medium">
+                      Cuota comunitaria mensual para no pagar todo de golpe
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-headline-sm text-headline-sm text-primary font-extrabold text-[22px]">
+                      $ 10.000
+                    </span>
+                    <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
+                  </div>
+                </div>
+
+                <p className="font-body-sm text-[12px] text-on-surface-variant italic bg-surface-container/60 p-2.5 rounded-xl border border-primary/20 my-2">
+                  "Con solo $10.000 por mes, si tu mascota sufre una urgencia o le tocan las vacunas del año, tenés la atención 100% cubierta sin tener que desembolsar $80.000 o más en el acto."
+                </p>
+
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span><strong>100% Cubierto en Urgencias 24/7</strong> sin copago</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span><strong>100% Bonificado en Vacunas</strong> (Rabia, Séxtuple/Triple Felina)</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Consultas clínicas generales (hasta 6 al año) sin cargo</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span><strong>50% de descuento directo</strong> en cirugías e internación</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Carnet digital QR con atención prioritaria</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="font-headline-sm text-headline-sm text-primary font-bold">$ 28.900</span>
-                <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
+
+              <button
+                onClick={() => {
+                  setSelectedPlanForAffiliation('PLAN-SOCIO-COMUNIDAD');
+                  setShowAffiliateModal(true);
+                }}
+                className="w-full mt-space-sm py-3 px-4 rounded-2xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:bg-primary-container shadow-md active:scale-95 transition-all"
+              >
+                Afiliar a Plan Socio ($10.000/mes)
+              </button>
+            </div>
+
+            {/* PLAN 2: Plan Esencial ($12.900/mes) */}
+            <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm border border-surface-container-high/40 space-y-space-sm relative h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Plan Esencial</span>
+                    <span className="font-body-sm text-[12px] text-on-surface-variant">Protección básica y medicina preventiva</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-headline-sm text-headline-sm text-primary font-bold">$ 12.900</span>
+                    <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 pt-3">
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Consultas clínicas: 100% bonificadas (hasta 6 al año)</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Vacunación anual y desparasitaciones periódicas</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>15% descuento en farmacia y medicamentos</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedPlanForAffiliation('PLAN-ESENCIAL');
+                  setShowAffiliateModal(true);
+                }}
+                className="w-full mt-space-sm py-2.5 px-4 rounded-2xl bg-surface-container text-primary font-label-md text-label-md font-bold hover:bg-surface-container-high transition-colors"
+              >
+                Afiliar a Plan Esencial
+              </button>
+            </div>
+
+            {/* PLAN 3: Plan Platinum ($24.500/mes) */}
+            <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-md border border-surface-container-high/40 space-y-space-sm relative overflow-hidden h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="px-2.5 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary text-on-secondary font-bold">
+                    Plan de Thor · Cobertura Integral
+                  </span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Plan Platinum</span>
+                    <span className="font-body-sm text-[12px] text-on-surface-variant">Máxima tranquilidad para cachorros y adultos</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-headline-sm text-headline-sm text-primary font-bold">$ 24.500</span>
+                    <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 pt-3">
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Consultas ilimitadas + Urgencias 24/7 sin copago</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>40% de cobertura en cirugías e internaciones</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Limpieza dental con ultrasonido anual gratuita</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Estudios de laboratorio y radiografías al 50%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 pt-space-xs mt-3">
+                <button
+                  onClick={() => alert("Mostrando comparativa detallada de coberturas")}
+                  className="flex-1 py-2.5 px-4 rounded-2xl bg-surface-container-high text-on-surface font-label-md text-label-md font-bold"
+                >
+                  Comparar Coberturas
+                </button>
+                <button
+                  onClick={() => alert("Compartiendo ficha del plan por WhatsApp")}
+                  className="py-2.5 px-3 rounded-2xl bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-[18px]">share</span>
+                </button>
               </div>
             </div>
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Chequeos geriátricos semestrales (perfil renal/hepático)</span>
+
+            {/* PLAN 4: Plan Senior (+7 Años) */}
+            <div className="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm border border-surface-container-high/40 space-y-space-sm relative h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Plan Senior</span>
+                      <span className="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-tertiary-fixed text-on-tertiary-fixed font-bold">
+                        +7 Años
+                      </span>
+                    </div>
+                    <span className="font-body-sm text-[12px] text-on-surface-variant">Diagnóstico precoz y geriatría preventiva</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-headline-sm text-headline-sm text-primary font-bold">$ 28.900</span>
+                    <span className="block font-body-sm text-[11px] text-on-surface-variant">/ mes</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 pt-3">
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Chequeos geriátricos semestrales (perfil renal/hepático)</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Ecografías abdominales y electrocardiogramas bonificados</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                    <span>Soporte nutricional y medicación crónica con 30% off</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Ecografías abdominales y electrocardiogramas bonificados</span>
-              </div>
-              <div className="flex items-center space-x-2 font-body-sm text-[12px] text-on-surface">
-                <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                <span>Soporte nutricional y medicación crónica con 30% off</span>
-              </div>
+              <button
+                onClick={() => {
+                  setSelectedPlanForAffiliation('PLAN-SENIOR');
+                  setShowAffiliateModal(true);
+                }}
+                className="w-full mt-space-sm py-2.5 px-4 rounded-2xl bg-surface-container text-primary font-label-md text-label-md font-bold hover:bg-surface-container-high transition-colors"
+              >
+                Cambiar a Plan Senior
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setSelectedPlanForAffiliation('PLAN-SENIOR');
-                setShowAffiliateModal(true);
-              }}
-              className="w-full mt-space-sm py-2.5 px-4 rounded-2xl bg-surface-container text-primary font-label-md text-label-md font-bold hover:bg-surface-container-high transition-colors"
-            >
-              Cambiar a Plan Senior
-            </button>
           </div>
         </div>
       )}

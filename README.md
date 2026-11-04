@@ -51,6 +51,32 @@ Para evitar que una familia tenga que desembolsar $80.000 a $300.000 de golpe an
 
 ---
 
+## 📱 Diseño 100% Responsivo: Computadora & Celular
+
+El sistema se adapta automáticamente según el dispositivo utilizado:
+- **💻 Computadora / Workstation de Consultorio (`>= 1024px`):**
+  - **Barra Lateral Izquierda Persistente (Sidebar):** Muestra el logotipo de la clínica, CUIT fiscal, acceso directo con un clic a Urgencias (con contador de pacientes en espera), menú de navegación y tarjeta del profesional con matrícula provincial (MP) y box de guardia.
+  - **Grilla Ampliada Multi-Columna:** Tablas y listas con visualización a dos y tres columnas para visualización cómoda en monitores de consultorio o recepción.
+  - **Header Superior Integrado:** Muestra el título del módulo, la sede y el botón de Urgencias.
+- **📱 Celulares & Tablets (`< 1024px`):**
+  - **Navegación Inferior Nativa (Bottom Nav Bar):** Con botones táctiles ergonómicos optimizados para una sola mano (Agenda, Pacientes, VetBot, Planes).
+  - **Header Fijo Superior:** Con badge de estado y acceso a perfil/urgencias.
+  - **Diseño Móvil Ultra-Fluido:** Listas optimizadas en tarjetas verticales sin scroll horizontal incómodo.
+
+---
+
+## 🔐 Autenticación Profesional & Onboarding SaaS B2B
+
+VetCare Pro opera bajo un modelo **SaaS B2B Multi-Clínica**:
+1. **Acceso Profesional con Verificación de Matrícula (Ley 14.072):**
+   - El veterinario inicia sesión seleccionando su consultorio (**Box 01**, **Box 02**, **Quirófano**) y su **Turno de Guardia** (Mañana, Tarde, Noche).
+   - En cada receta y evolución médica queda auditada la matrícula provincial y firma digital del actuante.
+2. **Creación y Alta de Nuevas Clínicas (B2B Self-Onboarding):**
+   - Cualquier clínica veterinaria puede registrarse ingresando su CUIT, Razón Social, Dirección y configurando su propia cuota mensual para suscriptores (por defecto **$10.000 ARS/mes**).
+   - Genera automáticamente un subdominio/slug aislado en la base de datos de Supabase.
+
+---
+
 ## 🛠️ Puesta en Marcha Local
 
 1. Instalar dependencias:

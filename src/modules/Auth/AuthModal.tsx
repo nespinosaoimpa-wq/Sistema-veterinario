@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { UsuarioSesion, Clinica } from '../../types';
+import { databaseService } from '../../lib/databaseService';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginSuccess: (usuario: UsuarioSesion) => void;
-  currentSesion?: UsuarioSesion;
+  currentSesion?: UsuarioSesion | null;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -15,26 +16,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   currentSesion,
 }) => {
   const [mode, setMode] = useState<'login' | 'registro_clinica'>('login');
-  
-  // Login Form States
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Estados de Login
   const [email, setEmail] = useState(currentSesion?.email || 'valeria.gomez@vetcarepro.com');
   const [password, setPassword] = useState('********');
-  const [selectedBox, setSelectedBox] = useState(currentSesion?.box_actual || 'Box 1');
-  const [selectedTurno, setSelectedTurno] = useState(currentSesion?.turno_actual || 'Turno Mañana');
+  const [selectedBox, setSelectedBox] = useState(currentSesion?.box_actual || 'Box 01');
+  const [selectedTurno, setSelectedTurno] = useState(currentSesion?.turno_actual || 'Turno Mañana (08:00 - 14:00)');
 
-  // Nueva Clínica B2B States
+  // Estados de Registro de Clínica B2B (Desde Cero)
   const [clinicaNombre, setClinicaNombre] = useState('');
   const [clinicaCuit, setClinicaCuit] = useState('');
   const [clinicaDireccion, setClinicaDireccion] = useState('');
+  const [clinicaEmail, setClinicaEmail] = useState('');
   const [clinicaCuotaSocio, setClinicaCuotaSocio] = useState('10000');
+  
+  // Datos del Profesional a cargo
   const [adminNombre, setAdminNombre] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
+  const [adminApellido, setAdminApellido] = useState('');
   const [adminMatricula, setAdminMatricula] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
 
   if (!isOpen) return null;
 
+  // Acceso Rápido con Perfiles de Demostración
   const handleQuickDemoLogin = (perfil: 'valeria' | 'recepcion' | 'admin') => {
-    let mockUser: UsuarioSesion;
+    setLoading(true);
+    setErrorMessage(null);
+
     const mockClinica: Clinica = {
       id: '00000000-0000-0000-0000-000000000001',
       slug: 'vetcare-central',
@@ -44,6 +54,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       direccion: 'Av. Libertador 2420, CABA',
       cuota_socio_defecto: 10000,
     };
+
+    let mockUser: UsuarioSesion;
 
     if (perfil === 'valeria') {
       mockUser = {
@@ -83,47 +95,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       };
     }
 
+    databaseService.saveLocalSession(mockUser);
+    setLoading(false);
     onLoginSuccess(mockUser);
     onClose();
   };
 
-  const handleCrearClinica = (e: React.FormEvent) => {
+  // Iniciar Sesión buscando en Supabase
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clinicaNombre || !clinicaCuit) {
-      alert('Por favor complete el nombre de la clínica y CUIT.');
+    setLoading(true);
+    setErrorMessage(null);
+
+    const result = await databaseService.login({
+      email,
+      box_actual: selectedBox,
+      turno_actual: selectedTurno,
+    });
+
+    setLoading(false);
+
+    if (result.error || !result.sesion) {
+      setErrorMessage(result.error || 'Credenciales no encontradas en Supabase.');
       return;
     }
 
-    const nuevaClinica: Clinica = {
-      id: crypto.randomUUID(),
-      slug: clinicaNombre.toLowerCase().replace(/\s+/g, '-'),
+    onLoginSuccess(result.sesion);
+    onClose();
+  };
+
+  // Registrar Clínica B2B en Supabase desde cero
+  const handleCrearClinica = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clinicaNombre || !clinicaCuit || !adminNombre || !adminEmail) {
+      setErrorMessage('Por favor completá el Nombre de la Clínica, CUIT, Nombre del Veterinario y Email.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage(null);
+
+    const res = await databaseService.registrarClinica({
       nombre_fantasia: clinicaNombre,
       cuit: clinicaCuit,
-      email_contacto: adminEmail || 'admin@' + clinicaNombre.toLowerCase().replace(/\s+/g, '') + '.com',
-      direccion: clinicaDireccion || 'Sede Central',
-      cuota_socio_defecto: Number(clinicaCuotaSocio) || 10000,
-    };
+      direccion: clinicaDireccion || 'Consultorio Principal',
+      email: clinicaEmail || adminEmail,
+      cuota_socio: Number(clinicaCuotaSocio) || 10000,
+      admin_nombre: adminNombre,
+      admin_apellido: adminApellido || 'Responsable',
+      admin_matricula: adminMatricula || 'MP 10.000',
+      admin_email: adminEmail,
+      box_actual: 'Box 01',
+      turno_actual: 'Turno Mañana (08:00 - 14:00)',
+    });
 
-    const nuevoAdmin: UsuarioSesion = {
-      id: crypto.randomUUID(),
-      nombre: adminNombre.split(' ')[0] || 'Director',
-      apellido: adminNombre.split(' ').slice(1).join(' ') || 'Médico',
-      email: adminEmail,
-      rol: 'administrador',
-      matricula_provincial: adminMatricula || 'MP 12.000',
-      box_actual: 'Box 1',
-      turno_actual: 'Turno Mañana',
-      clinica: nuevaClinica,
-    };
+    setLoading(false);
 
-    alert(`¡Clínica "${nuevaClinica.nombre_fantasia}" registrada con éxito! Plan de socios configurado en $${nuevaClinica.cuota_socio_defecto.toLocaleString('es-AR')}/mes.`);
-    onLoginSuccess(nuevoAdmin);
+    if (res.error || !res.sesion) {
+      setErrorMessage(`No se pudo crear en Supabase: ${res.error}. Verificá haber ejecutado 'supabase/setup_desde_cero.sql' en el SQL Editor.`);
+      return;
+    }
+
+    onLoginSuccess(res.sesion);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-container-lowest w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-surface-container-high/40 text-left animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
+      <div className="bg-surface-container-lowest w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-surface-container-high/40 text-left animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto no-scrollbar">
         
         {/* Cabecera del Modal */}
         <div className="flex items-center justify-between pb-3 border-b border-surface-container-high">
@@ -134,19 +173,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               <h2 className="font-headline-sm font-bold text-on-surface leading-tight">VetCare Pro</h2>
               <span className="font-label-sm text-[11px] text-primary font-semibold">
-                Plataforma SaaS B2B Veterinaria
+                Plataforma SaaS B2B Veterinaria &amp; Supabase
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1">
-            <span className="material-symbols-outlined text-[22px]">close</span>
-          </button>
+          {currentSesion && (
+            <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1">
+              <span className="material-symbols-outlined text-[22px]">close</span>
+            </button>
+          )}
         </div>
 
-        {/* Pestañas: Login vs Registro de Clínica B2B */}
+        {/* Mensaje de Error */}
+        {errorMessage && (
+          <div className="mt-3 p-3 bg-error-container text-on-error-container rounded-2xl text-[12px] flex items-start gap-2">
+            <span className="material-symbols-outlined text-[18px] text-error flex-shrink-0">error</span>
+            <div className="flex-1">
+              <span className="font-bold block">Aviso:</span>
+              <span>{errorMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Pestañas: Acceso vs Registro de Nueva Clínica */}
         <div className="flex bg-surface-container-high p-1 rounded-2xl my-4">
           <button
-            onClick={() => setMode('login')}
+            onClick={() => { setMode('login'); setErrorMessage(null); }}
             className={`flex-1 py-2 rounded-xl font-label-md text-label-md font-bold transition-all ${
               mode === 'login' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'
             }`}
@@ -154,52 +206,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             Acceso Profesional
           </button>
           <button
-            onClick={() => setMode('registro_clinica')}
+            onClick={() => { setMode('registro_clinica'); setErrorMessage(null); }}
             className={`flex-1 py-2 rounded-xl font-label-md text-label-md font-bold transition-all ${
               mode === 'registro_clinica' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'
             }`}
           >
-            Registrar Veterinaria (B2B)
+            Registrar Clínica (Desde Cero)
           </button>
         </div>
 
         {mode === 'login' ? (
           <div className="space-y-4">
-            {/* Accesos rápidos de demostración */}
-            <div className="p-3 bg-surface-container-low rounded-2xl border border-surface-container-high/40 text-left">
-              <span className="font-label-sm text-[11px] text-on-surface-variant font-bold uppercase tracking-wider block mb-2">
-                ⚡ Acceso Rápido de Demostración:
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('valeria')}
-                  className="py-2 px-2 bg-primary text-on-primary rounded-xl font-label-sm text-[11px] font-bold shadow-sm active:scale-95 text-center"
-                >
-                  Dra. Valeria (MP 10.492)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('recepcion')}
-                  className="py-2 px-2 bg-surface-container-lowest text-on-surface rounded-xl font-label-sm text-[11px] font-bold border border-surface-container-high active:scale-95 text-center"
-                >
-                  Recepción
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('admin')}
-                  className="py-2 px-2 bg-secondary text-on-secondary rounded-xl font-label-sm text-[11px] font-bold shadow-sm active:scale-95 text-center"
-                >
-                  Admin Clínica
-                </button>
-              </div>
-            </div>
-
-            {/* Formulario tradicional */}
-            <form onSubmit={(e) => { e.preventDefault(); handleQuickDemoLogin('valeria'); }} className="space-y-3">
+            {/* Formulario tradicional de login */}
+            <form onSubmit={handleLoginSubmit} className="space-y-3">
               <div>
                 <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                  Email Profesional
+                  Email del Profesional / Clínica
                 </label>
                 <input
                   type="email"
@@ -228,59 +250,97 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                    Turno Asignado
+                    Turno de Guardia
                   </label>
                   <select
                     value={selectedTurno}
                     onChange={(e) => setSelectedTurno(e.target.value)}
                     className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
                   >
-                    <option value="Turno Mañana">Turno Mañana (08-14h)</option>
-                    <option value="Turno Tarde">Turno Tarde (14-20h)</option>
-                    <option value="Guardia 24h">Guardia Nocturna / 24h</option>
+                    <option value="Turno Mañana (08:00 - 14:00)">Mañana (08-14h)</option>
+                    <option value="Turno Tarde (14:00 - 20:00)">Tarde (14-20h)</option>
+                    <option value="Guardia 24h">Guardia 24h</option>
                   </select>
                 </div>
                 <div>
                   <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                    Box / Consultorio
+                    Box / Quirófano
                   </label>
                   <select
                     value={selectedBox}
                     onChange={(e) => setSelectedBox(e.target.value)}
                     className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
                   >
-                    <option value="Box 1">Box 1 (Clínica)</option>
-                    <option value="Box 2">Box 2 (Vacunación)</option>
-                    <option value="Sala 2 (Urgencias)">Sala 2 (Urgencias)</option>
-                    <option value="Quirófano">Quirófano Central</option>
+                    <option value="Box 01">Box 01 (Consultorio)</option>
+                    <option value="Box 02">Box 02 (Urgencias)</option>
+                    <option value="Quirófano Central">Quirófano Central</option>
                   </select>
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-primary text-on-primary rounded-2xl font-label-md text-label-md font-bold shadow-md hover:bg-primary-container active:scale-95 transition-all mt-2"
+                disabled={loading}
+                className="w-full mt-2 py-3 bg-primary text-on-primary rounded-xl font-label-md font-bold shadow-md hover:bg-primary/95 active:scale-98 transition-all flex items-center justify-center gap-2"
               >
-                Ingresar al Sistema
+                {loading ? (
+                  <span>Conectando con Supabase...</span>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">lock_open</span>
+                    <span>Ingresar a Consultorio</span>
+                  </>
+                )}
               </button>
             </form>
+
+            {/* Accesos rápidos de demostración */}
+            <div className="pt-3 border-t border-surface-container-high/60">
+              <span className="font-label-sm text-[11px] text-on-surface-variant font-bold uppercase tracking-wider block mb-2">
+                O ingresar con perfil demo para pruebas:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('valeria')}
+                  className="py-2 px-2 bg-surface-container-low hover:bg-primary/10 text-primary rounded-xl font-label-sm text-[11px] font-bold border border-primary/20 active:scale-95 text-center transition-colors"
+                >
+                  Dra. Valeria (MP 10.492)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('recepcion')}
+                  className="py-2 px-2 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-xl font-label-sm text-[11px] font-bold border border-surface-container-high active:scale-95 text-center transition-colors"
+                >
+                  Recepción
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('admin')}
+                  className="py-2 px-2 bg-surface-container-low hover:bg-secondary/10 text-secondary rounded-xl font-label-sm text-[11px] font-bold border border-secondary/20 active:scale-95 text-center transition-colors"
+                >
+                  Admin Clínica
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
-          /* Formulario de Alta de Clínica B2B */
+          /* Formulario Registro de Clínica Nueva B2B */
           <form onSubmit={handleCrearClinica} className="space-y-3">
-            <div className="p-3 bg-primary/5 rounded-2xl border border-primary/20 text-[12px] text-primary">
-              🏢 <strong>Crea el espacio para tu veterinaria:</strong> Podrás invitar a tus colegas veterinarios, configurar tus cajas de atención y habilitar el <strong>Plan Socio a $10.000/mes</strong> para tus clientes.
+            <div className="p-3 bg-primary/5 rounded-2xl border border-primary/20 text-[12px] text-on-surface-variant leading-relaxed">
+              <span className="font-bold text-primary block mb-0.5">Creación de Clínica Veterinaria en Supabase:</span>
+              Registrá tu propia veterinaria desde cero con base de datos aislada y plan de socios de <strong>$10.000/mes</strong>.
             </div>
 
             <div>
               <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                Nombre de Fantasía de la Clínica
+                Nombre de Fantasía de la Clínica *
               </label>
               <input
                 type="text"
                 value={clinicaNombre}
                 onChange={(e) => setClinicaNombre(e.target.value)}
-                placeholder="Ej: Veterinaria Belgrano Norte"
+                placeholder="ej: Hospital Veterinario San Martín"
                 className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
                 required
               />
@@ -289,26 +349,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                  CUIT Fiscal
+                  CUIT Fiscal *
                 </label>
                 <input
                   type="text"
                   value={clinicaCuit}
                   onChange={(e) => setClinicaCuit(e.target.value)}
-                  placeholder="30-71829301-4"
-                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
+                  placeholder="30-71829384-9"
+                  className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
                   required
                 />
               </div>
               <div>
                 <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                  Cuota Mensual de Socio ($)
+                  Cuota Plan Socio (ARS) *
                 </label>
                 <input
                   type="number"
                   value={clinicaCuotaSocio}
                   onChange={(e) => setClinicaCuotaSocio(e.target.value)}
-                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md font-bold text-primary focus:outline-none"
+                  className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md font-bold text-primary focus:outline-none"
                   required
                 />
               </div>
@@ -316,62 +376,85 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div>
               <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
-                Dirección de la Sede Central
+                Dirección de la Sede
               </label>
               <input
                 type="text"
                 value={clinicaDireccion}
                 onChange={(e) => setClinicaDireccion(e.target.value)}
-                placeholder="Av. Cabildo 1420, CABA"
+                placeholder="ej: Av. San Martín 1540, Morón"
                 className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
               />
             </div>
 
-            <div className="border-t border-surface-container-high pt-2">
-              <span className="font-label-sm text-[11px] text-on-surface font-bold uppercase tracking-wider block mb-2">
-                Datos del Director Médico / Administrador:
+            {/* Datos del Veterinario Responsable */}
+            <div className="pt-2 border-t border-surface-container-high/60 space-y-2">
+              <span className="font-label-sm text-[11px] font-bold text-on-surface block uppercase tracking-wider">
+                Profesional Responsable (Ley 14.072)
               </span>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="font-label-sm text-[10px] text-on-surface-variant block mb-1">Nombre Completo</label>
+                  <label className="font-label-sm text-[10px] text-on-surface-variant block mb-0.5">Nombre *</label>
                   <input
                     type="text"
                     value={adminNombre}
                     onChange={(e) => setAdminNombre(e.target.value)}
-                    placeholder="Dr. Martín Gómez"
-                    className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[12px] text-on-surface focus:outline-none"
+                    placeholder="ej: Lucas"
+                    className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[13px] text-on-surface focus:outline-none"
                     required
                   />
                 </div>
                 <div>
-                  <label className="font-label-sm text-[10px] text-on-surface-variant block mb-1">Matrícula Provincial</label>
+                  <label className="font-label-sm text-[10px] text-on-surface-variant block mb-0.5">Apellido</label>
+                  <input
+                    type="text"
+                    value={adminApellido}
+                    onChange={(e) => setAdminApellido(e.target.value)}
+                    placeholder="ej: Rossi"
+                    className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[13px] text-on-surface focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-label-sm text-[10px] text-on-surface-variant block mb-0.5">Matrícula (MP)</label>
                   <input
                     type="text"
                     value={adminMatricula}
                     onChange={(e) => setAdminMatricula(e.target.value)}
-                    placeholder="MP 11.450"
-                    className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[12px] text-on-surface focus:outline-none"
+                    placeholder="MP 12.450"
+                    className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[13px] text-on-surface focus:outline-none"
                   />
                 </div>
-              </div>
-              <div className="mt-2">
-                <label className="font-label-sm text-[10px] text-on-surface-variant block mb-1">Email de Administrador</label>
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@veterinaria.com"
-                  className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[12px] text-on-surface focus:outline-none"
-                  required
-                />
+                <div>
+                  <label className="font-label-sm text-[10px] text-on-surface-variant block mb-0.5">Email de Acceso *</label>
+                  <input
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="doctor@clinica.com"
+                    className="w-full bg-surface-container-low px-3 py-2 rounded-xl text-[13px] text-on-surface focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-primary text-on-primary rounded-2xl font-label-md text-label-md font-bold shadow-md hover:bg-primary-container active:scale-95 transition-all mt-3"
+              disabled={loading}
+              className="w-full mt-3 py-3 bg-secondary text-on-secondary rounded-xl font-label-md font-bold shadow-md hover:bg-secondary/95 active:scale-98 transition-all flex items-center justify-center gap-2"
             >
-              Registrar Clínica y Comenzar Prueba
+              {loading ? (
+                <span>Creando en Supabase...</span>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[18px]">add_business</span>
+                  <span>Registrar Clínica &amp; Iniciar</span>
+                </>
+              )}
             </button>
           </form>
         )}
@@ -379,3 +462,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
+export default AuthModal;

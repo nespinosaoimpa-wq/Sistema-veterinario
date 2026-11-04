@@ -1,30 +1,73 @@
-import React, { useState } from 'react';
-import { mockTurnosAgenda, mockTriajeUrgencia, mockDraValeria } from '../../data/mockData';
-import { TurnoAgenda, TabModulo } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { TurnoAgenda, TabModulo, UsuarioSesion } from '../../types';
+import { databaseService } from '../../lib/databaseService';
+import { mockTurnosAgenda, mockTriajeUrgencia } from '../../data/mockData';
 
 interface AgendaModuleProps {
+  sesion?: UsuarioSesion | null;
   onNavigateToTab: (tab: TabModulo) => void;
   onCallPatient: (patientName: string, tutorName: string) => void;
 }
 
-export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onCallPatient }) => {
+export const AgendaModule: React.FC<AgendaModuleProps> = ({
+  sesion,
+  onNavigateToTab,
+  onCallPatient,
+}) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'confirmed' | 'waiting' | 'urgent'>('all');
-  const [selectedDay, setSelectedDay] = useState<number>(24);
-  const [turnos, setTurnos] = useState<TurnoAgenda[]>(mockTurnosAgenda);
-  const [triaje, setTriaje] = useState(mockTriajeUrgencia);
+  const [turnos, setTurnos] = useState<TurnoAgenda[]>([]);
+  const [triaje, setTriaje] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [showNewTurnoModal, setShowNewTurnoModal] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
 
-  // Días de la semana 43
-  const weekDays = [
-    { dia: 'LUN', num: 21, hasEvent: false },
-    { dia: 'MAR', num: 22, hasEvent: true },
-    { dia: 'MIÉ', num: 23, hasEvent: true },
-    { dia: 'JUE', num: 24, hasEvent: true, today: true },
-    { dia: 'VIE', num: 25, hasEvent: true },
-    { dia: 'SÁB', num: 26, hasEvent: false },
-    { dia: 'DOM', num: 27, hasEvent: false },
-  ];
+  // Formulario de nuevo turno
+  const [nuevoPaciente, setNuevoPaciente] = useState('');
+  const [nuevoTutor, setNuevoTutor] = useState('');
+  const [nuevaHora, setNuevaHora] = useState('11:30');
+  const [nuevoBox, setNuevoBox] = useState('Box 01');
+  const [nuevoMotivo, setNuevoMotivo] = useState('');
+  const [esUrgencia, setEsUrgencia] = useState(false);
+
+  // Cargar turnos reales desde Supabase
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTurnos() {
+      setLoading(true);
+      const res = await databaseService.getTurnos(sesion?.clinica?.id);
+      if (isMounted) {
+        if (res.data && res.data.length > 0) {
+          const mapped: TurnoAgenda[] = res.data.map((t: any) => ({
+            id: t.id,
+            hora: t.hora_inicio?.slice(0, 5) || '10:00',
+            duracion: `${t.duracion_minutos || 30} min`,
+            paciente: {
+              id: t.paciente?.id || 'pac-1',
+              nombre: t.paciente?.nombre || 'Paciente',
+              especie_raza: `${t.paciente?.especie || 'Canino'} • ${t.paciente?.raza || 'Mestizo'}`,
+              sexo: t.paciente?.sexo === 'hembra' ? 'female' : 'male',
+              foto_url: t.paciente?.foto_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=150',
+              tutor_nombre: t.paciente?.tutor?.nombre_completo || 'Tutor Responsable',
+              plan_nombre: t.paciente?.suscripciones?.length > 0 ? 'Plan Socio $10k' : 'Particular',
+            },
+            motivo: t.motivo_consulta,
+            icono_motivo: t.es_urgencia ? 'emergency' : 'medical_services',
+            sede_o_info: t.box_sala || 'Box 01',
+            badge_extra: t.paciente?.suscripciones?.length > 0 ? 'Socio $10k' : undefined,
+            estado: t.es_urgencia ? 'urgent' : t.estado === 'en_espera' ? 'waiting' : 'confirmed',
+            estado_label: t.es_urgencia ? 'Urgencia' : t.estado === 'en_espera' ? 'En Sala' : 'Confirmado',
+            tipo_accion: 'llamar',
+          }));
+          setTurnos(mapped);
+        } else {
+          setTurnos([]);
+        }
+        setLoading(false);
+      }
+    }
+    loadTurnos();
+    return () => { isMounted = false; };
+  }, [sesion?.clinica?.id]);
 
   // Filtro de turnos
   const filteredTurnos = turnos.filter((t) => {
@@ -35,10 +78,46 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onC
     return true;
   });
 
-  const handleAtenderUrgencia = () => {
-    setTriaje(prev => ({ ...prev, atendido: true }));
-    onNavigateToTab('pacientes');
+  const handleCrearTurnoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nuevoPaciente.trim() || !nuevoMotivo.trim()) {
+      alert('Por favor indicá el nombre del paciente y motivo de consulta.');
+      return;
+    }
+
+    const nuevoTurnoItem: TurnoAgenda = {
+      id: crypto.randomUUID(),
+      hora: nuevaHora,
+      duracion: '30 min',
+      paciente: {
+        id: crypto.randomUUID(),
+        nombre: nuevoPaciente,
+        especie_raza: 'Canino • Mestizo',
+        sexo: 'male',
+        foto_url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=150',
+        tutor_nombre: nuevoTutor || 'Tutor Particular',
+        plan_nombre: 'Plan Socio $10k',
+      },
+      motivo: nuevoMotivo,
+      icono_motivo: esUrgencia ? 'emergency' : 'medical_services',
+      sede_o_info: nuevoBox,
+      badge_extra: 'Socio $10k',
+      estado: esUrgencia ? 'urgent' : 'waiting',
+      estado_label: esUrgencia ? 'Urgencia' : 'En Sala',
+      tipo_accion: 'llamar',
+    };
+
+    setTurnos((prev) => [nuevoTurnoItem, ...prev]);
+    setShowNewTurnoModal(false);
+    setNuevoPaciente('');
+    setNuevoTutor('');
+    setNuevoMotivo('');
+    setEsUrgencia(false);
   };
+
+  const doctorNombre = sesion ? `${sesion.nombre} ${sesion.apellido}` : 'Profesional';
+  const clinicaNombre = sesion?.clinica?.nombre_fantasia || 'Clínica Veterinaria';
+  const boxActual = sesion?.box_actual || 'Box 01';
 
   return (
     <div className="flex flex-col w-full pb-28 max-w-5xl mx-auto">
@@ -47,14 +126,14 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onC
         <div className="flex items-center justify-between">
           <div className="flex flex-col text-left">
             <span className="font-label-md text-label-md text-secondary font-semibold uppercase tracking-wider">
-              Turno Mañana • Box 1
+              {sesion?.turno_actual || 'Turno Mañana'} • {boxActual}
             </span>
             <h1 className="font-headline-xl-mobile text-headline-xl-mobile text-on-surface tracking-tight font-bold">
-              ¡Hola, Dra. {mockDraValeria.nombre}!
+              ¡Hola, {sesion?.rol === 'veterinario' ? 'Dra. ' : ''}{doctorNombre}!
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5 mt-0.5">
-              <span className="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
-              <span>Jueves, 24 de Octubre</span>
+              <span className="material-symbols-outlined text-[16px] text-primary">apartment</span>
+              <span>{clinicaNombre}</span>
             </p>
           </div>
           <div className="relative flex flex-col items-end">
@@ -64,464 +143,282 @@ export const AgendaModule: React.FC<AgendaModuleProps> = ({ onNavigateToTab, onC
               className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface active:scale-95 transition-transform relative shadow-sm"
             >
               <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error animate-ping" />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error" />
+              {turnos.length > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+              )}
             </button>
           </div>
         </div>
-
-        {/* Modal/Dropdown de notificaciones */}
-        {notificationOpen && (
-          <div className="mt-3 p-3 bg-surface-container-lowest rounded-2xl shadow-xl border border-surface-container-high text-left animate-in fade-in duration-200">
-            <div className="flex items-center justify-between pb-2 border-b border-surface-container-high">
-              <span className="font-label-md font-bold text-on-surface">Notificaciones del Turno</span>
-              <span className="text-[11px] text-primary font-bold">2 nuevas</span>
-            </div>
-            <div className="mt-2 space-y-2 text-[12px]">
-              <div className="flex items-start gap-2 text-on-surface">
-                <span className="material-symbols-outlined text-[16px] text-error">emergency</span>
-                <span>Ingreso en Sala 2: Golden Retriever con disnea aguda.</span>
-              </div>
-              <div className="flex items-start gap-2 text-on-surface">
-                <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>
-                <span>El bot confirmó el turno de Mimi para las 10:15 hs.</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* 1.2 Banner de Urgencia & 1.3 Estadísticas (Grid responsivo en Desktop) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 px-margin mt-space-sm items-start">
-        {/* Banner de Urgencia Crítico */}
-        {!triaje.atendido && (
-          <div className="lg:col-span-7">
-            <div className="rounded-2xl bg-error-container text-on-error-container p-space-md shadow-md flex flex-col gap-space-xs relative overflow-hidden border border-error/20 text-left">
-              <div className="flex items-start justify-between gap-space-sm">
-                <div className="flex items-center gap-space-xs">
-                  <span className="material-symbols-outlined text-[20px] text-error animate-pulse">warning</span>
-                  <span className="font-label-sm text-label-sm uppercase tracking-wide text-error font-bold">
-                    Triaje de Urgencia en Espera
-                  </span>
-                </div>
-                <span className="font-label-sm text-label-sm bg-surface-container-lowest text-error px-2.5 py-0.5 rounded-full shadow-sm font-semibold">
-                  {triaje.tiempo_espera}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-space-sm mt-1">
-                <div className="w-13 h-13 rounded-xl bg-surface-container-lowest flex items-center justify-center text-error flex-shrink-0 shadow-sm overflow-hidden">
-                  <img
-                    className="w-14 h-14 object-cover rounded-xl"
-                    alt="Canino en Urgencias"
-                    src={triaje.foto_url}
-                  />
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
-                    {triaje.especie_raza}
-                  </span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
-                    {triaje.sintoma}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-space-xs pt-space-xs flex items-center justify-between gap-space-sm border-t border-error/10">
-                <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
-                  <span className="material-symbols-outlined text-[16px] text-error">ecg_heart</span>
-                  SpO2 {triaje.spo2}% • Temp {triaje.temperatura}°C
-                </span>
-                <button
-                  onClick={handleAtenderUrgencia}
-                  className="bg-error text-on-error px-4 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-transform shadow-md font-bold"
-                >
-                  <span>Atender Ya</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
-              </div>
-            </div>
+      {/* 1.2 Métricas del Día */}
+      <div className="px-margin py-space-sm">
+        <div className="grid grid-cols-3 gap-space-xs bg-surface-container-lowest p-space-xs rounded-2xl shadow-sm border border-surface-container-high/40 text-center">
+          <div className="flex flex-col items-center justify-center py-3 px-1 rounded-xl bg-surface-container-low">
+            <span className="font-headline-md font-bold text-primary">{turnos.length}</span>
+            <span className="font-label-sm text-[11px] text-on-surface-variant mt-0.5">Citas Hoy</span>
           </div>
-        )}
-
-        {/* Panel de Estadísticas del Día */}
-        <div className={triaje.atendido ? 'lg:col-span-12' : 'lg:col-span-5'}>
-          <div className="grid grid-cols-3 gap-space-xs bg-surface-container-lowest p-space-xs rounded-2xl shadow-sm border border-surface-container-high/40 h-full items-center">
-            <div className="flex flex-col items-center justify-center py-4 px-1 rounded-xl bg-surface-container-low text-center">
-              <span className="font-headline-md text-headline-md text-primary font-bold">8</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Citas Hoy</span>
-            </div>
-            <div className="flex flex-col items-center justify-center py-4 px-1 rounded-xl bg-surface-container-low text-center">
-              <span className="font-headline-md text-headline-md text-secondary font-bold">3</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Atendidas</span>
-            </div>
-            <div className="flex flex-col items-center justify-center py-4 px-1 rounded-xl bg-surface-container-low text-center">
-              <span className="font-headline-md text-headline-md text-tertiary font-bold">1</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Urg. Resuelta</span>
-            </div>
+          <div className="flex flex-col items-center justify-center py-3 px-1 rounded-xl bg-surface-container-low">
+            <span className="font-headline-md font-bold text-secondary">
+              {turnos.filter(t => t.estado === 'confirmed').length}
+            </span>
+            <span className="font-label-sm text-[11px] text-on-surface-variant mt-0.5">Confirmadas</span>
+          </div>
+          <div className="flex flex-col items-center justify-center py-3 px-1 rounded-xl bg-surface-container-low">
+            <span className="font-headline-md font-bold text-error">
+              {turnos.filter(t => t.estado === 'urgent').length}
+            </span>
+            <span className="font-label-sm text-[11px] text-on-surface-variant mt-0.5">Urgencias</span>
           </div>
         </div>
       </div>
 
-      {/* 1.4 Selector de Semana */}
-      <div className="mt-space-md">
-        <div className="px-margin flex items-center justify-between mb-space-xs">
-          <span className="font-label-lg text-label-lg text-on-surface font-bold">Semana 43</span>
-          <button 
-            onClick={() => alert("Calendario mensual en desarrollo")}
-            className="font-label-sm text-label-sm text-primary flex items-center gap-0.5 cursor-pointer hover:underline"
-          >
-            <span>Mes completo</span>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          </button>
-        </div>
-        <div className="flex gap-2 overflow-x-auto px-margin pb-1 no-scrollbar">
-          {weekDays.map((wd) => {
-            const isSelected = selectedDay === wd.num;
-            return (
-              <button
-                key={wd.num}
-                onClick={() => setSelectedDay(wd.num)}
-                className={`flex flex-col items-center justify-center min-w-[50px] py-2 px-1 rounded-xl active:scale-95 transition-all text-center ${
-                  isSelected
-                    ? 'bg-primary text-on-primary shadow-md'
-                    : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
-                }`}
-              >
-                <span className={`font-label-sm text-label-sm ${isSelected ? 'opacity-90' : ''}`}>
-                  {wd.dia}
-                </span>
-                <span className={`font-headline-sm text-headline-sm mt-0.5 ${isSelected ? 'font-bold' : ''}`}>
-                  {wd.num}
-                </span>
-                <span
-                  className={`w-1.5 h-1.5 rounded-full mt-1 ${
-                    isSelected ? 'bg-primary-fixed' : wd.hasEvent ? 'bg-secondary' : 'bg-transparent'
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 1.5 Chips de Filtro */}
-      <div className="mt-space-md px-margin">
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+      {/* 1.3 Filtros de Agenda */}
+      <div className="px-margin pt-space-xs pb-space-sm flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setSelectedFilter('all')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95 transition-transform ${
+            className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
               selectedFilter === 'all'
-                ? 'bg-primary text-on-primary font-bold'
-                : 'bg-surface-container-lowest text-on-surface'
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            <span>Todos</span>
-            <span className="bg-primary-container text-on-primary-container px-1.5 py-0.2 rounded-full text-[10px]">
-              8
-            </span>
-          </button>
-          <button
-            onClick={() => setSelectedFilter('confirmed')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95 transition-transform ${
-              selectedFilter === 'confirmed'
-                ? 'bg-primary text-on-primary font-bold'
-                : 'bg-surface-container-lowest text-on-surface'
-            }`}
-          >
-            <span>Confirmados</span>
-            <span className="bg-surface-container text-on-secondary-container px-1.5 py-0.2 rounded-full text-[10px]">
-              5
-            </span>
+            Todos ({turnos.length})
           </button>
           <button
             onClick={() => setSelectedFilter('waiting')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95 transition-transform ${
+            className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
               selectedFilter === 'waiting'
-                ? 'bg-primary text-on-primary font-bold'
-                : 'bg-surface-container-lowest text-on-surface'
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
-            <span>En Espera</span>
-            <span className="bg-tertiary-fixed text-on-tertiary-fixed px-1.5 py-0.2 rounded-full text-[10px]">
-              2
-            </span>
+            En Espera ({turnos.filter(t => t.estado === 'waiting').length})
           </button>
           <button
             onClick={() => setSelectedFilter('urgent')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95 transition-transform ${
+            className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
               selectedFilter === 'urgent'
-                ? 'bg-primary text-on-primary font-bold'
-                : 'bg-surface-container-lowest text-on-surface'
+                ? 'bg-error text-on-error shadow-sm'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-error" />
-            <span>Urgencias</span>
-            <span className="bg-error-container text-on-error-container px-1.5 py-0.2 rounded-full text-[10px]">
-              1
-            </span>
+            Urgencias ({turnos.filter(t => t.estado === 'urgent').length})
           </button>
         </div>
-      </div>
 
-      {/* 1.6 Cronograma del Día (Tarjetas de Pacientes con Timeline) */}
-      <div className="px-margin mt-space-md flex flex-col gap-space-md text-left">
-        <div className="flex items-center justify-between">
-          <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
-            Cronograma del Día
-          </span>
-          <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px] text-primary">schedule</span>
-            Box Principal 01
-          </span>
-        </div>
-
-        <div className="relative flex flex-col gap-space-md">
-          {filteredTurnos.map((turno) => (
-            <div key={turno.id} className="flex gap-space-sm items-start">
-              {/* Timeline izquierdo */}
-              <div className="flex flex-col items-center flex-shrink-0 w-12 pt-1 text-center">
-                <span className={`font-label-md text-label-md font-bold ${
-                  turno.estado === 'waiting' ? 'text-primary' : 'text-on-surface'
-                }`}>
-                  {turno.hora}
-                </span>
-                <span className="font-body-sm text-[11px] text-on-surface-variant">
-                  {turno.duracion}
-                </span>
-                <div className="w-0.5 h-16 bg-surface-container-highest mt-2 rounded-full" />
-              </div>
-
-              {/* Tarjeta del Paciente */}
-              <div className="flex-1 bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/40 flex flex-col gap-space-xs relative overflow-hidden">
-                <div className="flex items-start justify-between gap-space-xs">
-                  <div className="flex items-center gap-space-sm min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-surface-container-low flex-shrink-0 overflow-hidden shadow-sm">
-                      <img
-                        className="w-full h-full object-cover"
-                        alt={turno.paciente.nombre}
-                        src={turno.paciente.foto_url}
-                      />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
-                          {turno.paciente.nombre}
-                        </span>
-                        <span className={`material-symbols-outlined text-[16px] ${
-                          turno.paciente.sexo === 'male' ? 'text-secondary' : 'text-tertiary'
-                        }`}>
-                          {turno.paciente.sexo}
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
-                        {turno.paciente.especie_raza}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Chip de estado */}
-                  {turno.estado === 'waiting' && (
-                    <div className="flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded-full flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping" />
-                      <span className="font-label-sm text-[11px] font-bold">En Sala</span>
-                    </div>
-                  )}
-                  {turno.estado === 'confirmed' && (
-                    <div className="flex items-center gap-1 bg-surface-container text-on-secondary-container px-2 py-0.5 rounded-full flex-shrink-0">
-                      <span className="material-symbols-outlined text-[13px]">check</span>
-                      <span className="font-label-sm text-[11px] font-semibold">Confirmado</span>
-                    </div>
-                  )}
-                  {turno.estado === 'pending' && (
-                    <div className="flex items-center gap-1 bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full flex-shrink-0">
-                      <span className="material-symbols-outlined text-[13px]">hourglass_empty</span>
-                      <span className="font-label-sm text-[11px] font-semibold">Pendiente</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Motivo de consulta */}
-                <div className="bg-surface-container-low rounded-xl p-space-xs flex flex-col gap-1 mt-1 text-left">
-                  <div className="flex items-center gap-1.5 text-on-surface">
-                    <span className="material-symbols-outlined text-[16px] text-primary">{turno.icono_motivo}</span>
-                    <span className="font-label-md text-label-md font-medium truncate">{turno.motivo}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-on-surface-variant pt-0.5">
-                    <span className="font-body-sm text-body-sm truncate flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">person</span> {turno.sede_o_info}
-                    </span>
-                    <span className="font-label-sm text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full font-semibold">
-                      {turno.paciente.plan_nombre}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Acciones según el tipo de turno */}
-                <div className="pt-space-xs flex items-center justify-between gap-space-sm">
-                  {turno.tipo_accion === 'llamar' && (
-                    <>
-                      <button
-                        onClick={() => onCallPatient(turno.paciente.nombre, turno.paciente.tutor_nombre)}
-                        className="flex-1 bg-primary text-on-primary py-2 rounded-xl font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform font-bold"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">volume_up</span>
-                        <span>Llamar a Consulta</span>
-                      </button>
-                      <button
-                        onClick={() => onNavigateToTab('pacientes')}
-                        title="Ver Ficha Médica"
-                        className="w-10 h-10 rounded-xl bg-surface-container-high text-on-surface flex items-center justify-center active:scale-95 transition-transform hover:bg-surface-container"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">medical_information</span>
-                      </button>
-                    </>
-                  )}
-
-                  {turno.tipo_accion === 'preparar' && (
-                    <div className="w-full flex justify-end">
-                      <button
-                        onClick={() => onNavigateToTab('pacientes')}
-                        className="px-space-md py-1.5 rounded-xl bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1 active:scale-95 transition-transform"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                        <span>Preparar Ficha</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {turno.tipo_accion === 'placas' && (
-                    <div className="w-full flex justify-end">
-                      <button
-                        onClick={() => alert("Mostrando visor radiográfico (Día 14 post-op)")}
-                        className="px-space-md py-1.5 rounded-xl bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1 active:scale-95 transition-transform"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">radiology</span>
-                        <span>Ver Placas RX</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {turno.tipo_accion === 'recordatorio' && (
-                    <div className="w-full flex items-center justify-between">
-                      <button
-                        onClick={() => alert("Reenviando WhatsApp de preparación a Roberto Paz")}
-                        className="text-secondary font-label-sm text-label-sm flex items-center gap-1 active:scale-95 transition-transform font-semibold"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">chat</span>
-                        <span>Reenviar WhatsApp</span>
-                      </button>
-                      <button
-                        onClick={() => alert("Opciones de turno: reprogramar o confirmar")}
-                        className="px-space-md py-1.5 rounded-xl bg-surface-container-high text-on-surface font-label-sm text-label-sm active:scale-95 transition-transform"
-                      >
-                        <span>Gestionar</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 1.7 Banner del Bot Asistente */}
-      <div className="px-margin mt-space-lg mb-space-sm text-left">
-        <div
-          onClick={() => onNavigateToTab('bot-y-alertas')}
-          className="rounded-2xl bg-surface-container-low p-space-md flex items-center justify-between shadow-sm cursor-pointer hover:bg-surface-container transition-colors"
-        >
-          <div className="flex items-center gap-space-sm">
-            <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[22px]">smart_toy</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-label-md text-label-md text-on-surface font-bold">Bot Asistente VetCare</span>
-              <span className="font-body-sm text-[12px] text-on-surface-variant">Confirmó 4 turnos automáticamente hoy</span>
-            </div>
-          </div>
-          <span className="material-symbols-outlined text-primary text-[20px]">chevron_right</span>
-        </div>
-      </div>
-
-      {/* 1.8 Botón Flotante Sticky de Nuevo Turno */}
-      <div className="sticky bottom-20 px-margin mt-space-md z-40">
         <button
           onClick={() => setShowNewTurnoModal(true)}
-          className="w-full bg-primary text-on-primary h-14 rounded-full font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-xl active:scale-[0.98] transition-transform font-bold"
+          className="hidden sm:flex items-center gap-1 px-3.5 py-1.5 bg-primary text-on-primary rounded-full text-[12px] font-bold shadow-sm active:scale-95 transition-transform"
         >
-          <span className="material-symbols-outlined text-[24px]">add_circle</span>
-          <span>+ Nuevo Turno / Ingreso Rápido</span>
+          <span className="material-symbols-outlined text-[16px]">add</span>
+          <span>Nuevo Turno</span>
         </button>
       </div>
 
-      {/* Modal de Nuevo Turno */}
+      {/* 1.4 Lista de Turnos o Estado Vacío (Desde Cero) */}
+      <div className="px-margin space-y-3">
+        {loading ? (
+          <div className="py-12 text-center text-on-surface-variant">
+            <span className="material-symbols-outlined text-[32px] animate-spin text-primary">progress_activity</span>
+            <p className="text-[13px] mt-2">Cargando turnos desde Supabase...</p>
+          </div>
+        ) : filteredTurnos.length === 0 ? (
+          /* Estado Vacío: Desde Cero Sin Datos Falsos */
+          <div className="bg-surface-container-lowest border border-dashed border-surface-container-high rounded-3xl p-8 text-center flex flex-col items-center justify-center my-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3">
+              <span className="material-symbols-outlined text-[32px]">event_available</span>
+            </div>
+            <h3 className="font-headline-sm font-bold text-on-surface">No hay citas registradas</h3>
+            <p className="text-body-sm text-on-surface-variant max-w-sm mt-1 mb-5">
+              Tu agenda para <strong>{clinicaNombre}</strong> está al día. Hacé clic abajo para agendar un nuevo turno o consulta de guardia.
+            </p>
+            <button
+              onClick={() => setShowNewTurnoModal(true)}
+              className="px-5 py-2.5 bg-primary text-on-primary rounded-2xl font-label-md font-bold flex items-center gap-2 shadow-md active:scale-95 transition-transform"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>Agendar Primer Turno</span>
+            </button>
+          </div>
+        ) : (
+          filteredTurnos.map((turno) => (
+            <div
+              key={turno.id}
+              className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container-high/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left transition-all hover:border-primary/40"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-surface-container-low overflow-hidden flex-shrink-0">
+                  <img
+                    src={turno.paciente.foto_url}
+                    alt={turno.paciente.nombre}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="font-headline-sm font-bold text-on-surface">
+                      {turno.paciente.nombre}
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      turno.estado === 'urgent'
+                        ? 'bg-error text-on-error'
+                        : turno.estado === 'waiting'
+                        ? 'bg-warning-container text-on-warning-container'
+                        : 'bg-primary/10 text-primary'
+                    }`}>
+                      {turno.estado_label}
+                    </span>
+                    {turno.badge_extra && (
+                      <span className="text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full font-bold">
+                        {turno.badge_extra}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[12px] text-on-surface-variant font-medium">
+                    {turno.paciente.especie_raza} · Tutor: {turno.paciente.tutor_nombre}
+                  </span>
+                  <span className="text-[12px] text-primary font-semibold mt-0.5">
+                    {turno.motivo}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-surface-container-high/40">
+                <div className="text-right sm:text-right">
+                  <span className="font-bold text-[14px] text-on-surface block">{turno.hora} hs</span>
+                  <span className="text-[11px] text-on-surface-variant block">{turno.sede_o_info}</span>
+                </div>
+                <button
+                  onClick={() => onCallPatient(turno.paciente.nombre, turno.paciente.tutor_nombre)}
+                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-on-primary rounded-xl font-label-sm text-[12px] font-bold transition-all flex items-center gap-1 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[16px]">ring_volume</span>
+                  <span>Llamar a Box</span>
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Botón Flotante para Móvil */}
+      <div className="sm:hidden fixed bottom-20 inset-x-4 z-40">
+        <button
+          onClick={() => setShowNewTurnoModal(true)}
+          className="w-full bg-primary text-on-primary h-13 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-transform"
+        >
+          <span className="material-symbols-outlined text-[20px]">add</span>
+          <span>+ Nuevo Turno</span>
+        </button>
+      </div>
+
+      {/* Modal para Agendar Nuevo Turno Real */}
       {showNewTurnoModal && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-end justify-center">
-          <div className="bg-surface-container-lowest w-full rounded-t-3xl p-space-lg shadow-2xl max-w-lg text-left animate-in slide-in-from-bottom-6">
-            <div className="w-10 h-1 bg-surface-container-highest rounded-full mx-auto mb-4" />
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                Agendar Nuevo Turno / Ingreso
-              </h3>
-              <button 
-                onClick={() => setShowNewTurnoModal(false)}
-                className="text-on-surface-variant p-1"
-              >
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest w-full max-w-md rounded-3xl p-6 shadow-2xl border border-surface-container-high/40 text-left animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-surface-container-high">
+              <h3 className="font-headline-sm font-bold text-on-surface">Agendar Turno / Ingreso</h3>
+              <button onClick={() => setShowNewTurnoModal(false)} className="text-on-surface-variant p-1">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
-            <div className="space-y-3">
+
+            <form onSubmit={handleCrearTurnoSubmit} className="space-y-3 mt-4">
               <div>
-                <label className="font-label-sm text-on-surface-variant block mb-1">Paciente</label>
-                <input 
-                  type="text" 
-                  placeholder="Nombre de la mascota o DNI del tutor..." 
-                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
+                  Nombre del Paciente (Mascota) *
+                </label>
+                <input
+                  type="text"
+                  value={nuevoPaciente}
+                  onChange={(e) => setNuevoPaciente(e.target.value)}
+                  placeholder="ej: Rocky, Milo, Lola..."
+                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  required
                 />
               </div>
+
+              <div>
+                <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
+                  Nombre del Tutor / Responsable
+                </label>
+                <input
+                  type="text"
+                  value={nuevoTutor}
+                  onChange={(e) => setNuevoTutor(e.target.value)}
+                  placeholder="ej: Florencia Pérez"
+                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="font-label-sm text-on-surface-variant block mb-1">Horario</label>
-                  <input 
-                    type="time" 
-                    defaultValue="14:00" 
-                    className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md focus:outline-none"
+                  <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
+                    Hora Estimada
+                  </label>
+                  <input
+                    type="time"
+                    value={nuevaHora}
+                    onChange={(e) => setNuevaHora(e.target.value)}
+                    className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-label-sm text-on-surface-variant block mb-1">Box / Sala</label>
-                  <select className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md focus:outline-none">
-                    <option>Box 1 (Dra. Valeria)</option>
-                    <option>Box 2 (Cirugía)</option>
-                    <option>Sala 2 (Urgencias)</option>
+                  <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
+                    Box / Sala
+                  </label>
+                  <select
+                    value={nuevoBox}
+                    onChange={(e) => setNuevoBox(e.target.value)}
+                    className="w-full bg-surface-container-low px-3 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none"
+                  >
+                    <option value="Box 01">Box 01 (General)</option>
+                    <option value="Box 02">Box 02 (Urgencias)</option>
+                    <option value="Quirófano">Quirófano</option>
                   </select>
                 </div>
               </div>
+
               <div>
-                <label className="font-label-sm text-on-surface-variant block mb-1">Motivo</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej: Vacunación, control de peso, decaimiento..." 
-                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                <label className="font-label-sm text-[11px] text-on-surface-variant block mb-1 font-semibold">
+                  Motivo de la Consulta *
+                </label>
+                <input
+                  type="text"
+                  value={nuevoMotivo}
+                  onChange={(e) => setNuevoMotivo(e.target.value)}
+                  placeholder="ej: Vacunación Séxtuple, control clínico, vómitos..."
+                  className="w-full bg-surface-container-low px-4 py-2.5 rounded-xl font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  required
                 />
               </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="urgencia-check"
+                  checked={esUrgencia}
+                  onChange={(e) => setEsUrgencia(e.target.checked)}
+                  className="w-4 h-4 rounded text-error focus:ring-error"
+                />
+                <label htmlFor="urgencia-check" className="text-[12px] font-bold text-error cursor-pointer">
+                  Marcar como Triaje de Urgencia Prioritario
+                </label>
+              </div>
+
               <button
-                onClick={() => {
-                  alert("Turno registrado exitosamente.");
-                  setShowNewTurnoModal(false);
-                }}
-                className="w-full py-3 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold shadow-md active:scale-95 transition-transform mt-2"
+                type="submit"
+                className="w-full mt-3 py-3 bg-primary text-on-primary rounded-xl font-label-md font-bold shadow-md hover:bg-primary/95 active:scale-95 transition-all"
               >
-                Confirmar e Ingresar a Cola
+                Confirmar y Agendar Turno
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
 };
-
+export default AgendaModule;
